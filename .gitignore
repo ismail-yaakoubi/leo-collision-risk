@@ -1,0 +1,14 @@
+# Environnement virtuel :pip install -r requirements.txt
+.venv/
+# Data
+data/
+# fichiers Python et Jupyter
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# fichiers macOS
+.DS_Store
+
+#mots de passe, clés d'accès)
+.env
