@@ -32,4 +32,6 @@ de chaque objet pour compter les objets par tranche d'altitude.
   mesurer l'écart entre les deux méthodes.
 - Le temps de calcul augmente, mais reste de quelques secondes avec la
   bibliothèque sgp4, qui traite les objets par lots.
+- Le code d'erreur renvoyé par SGP4 est vérifié à chaque propagation :
+  une position en erreur est signalée et exclue du calcul d'altitude.
   
