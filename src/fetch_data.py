@@ -1,10 +1,11 @@
 """Télécharge les éléments orbitaux publics de CelesTrak."""
 
 import json
+import time
+import requests
 from datetime import datetime, timezone
 from pathlib import Path
 
-import requests
 
 URL = "https://celestrak.org/NORAD/elements/gp.php"
 DOSSIER_RAW = Path("data/raw")
@@ -20,6 +21,18 @@ def telecharger(groupe):
     return reponse.json()
 
 
+def fichier_recent(groupe, heures=2):
+    """Renvoie le dernier fichier du groupe s'il a moins de `heures` heures, sinon None."""
+    fichiers = sorted(DOSSIER_RAW.glob(f"{groupe}_*.json"))
+    if not fichiers:
+        return None
+    dernier = fichiers[-1]
+    age_secondes = time.time() - dernier.stat().st_mtime
+    if age_secondes < heures * 3600:
+        return dernier
+    return None
+
+
 def sauvegarder(donnees, groupe):
     """Enregistre les données dans data/raw, avec la date dans le nom du fichier."""
     DOSSIER_RAW.mkdir(parents=True, exist_ok=True)
@@ -30,6 +43,11 @@ def sauvegarder(donnees, groupe):
 
 
 if __name__ == "__main__":
-    donnees = telecharger(GROUPE)
-    chemin = sauvegarder(donnees, GROUPE)
-    print(f"{len(donnees)} objets enregistrés dans {chemin}")
+    recent = fichier_recent(GROUPE)
+    if recent is not None:
+        print(f"Fichier de moins de 2 h trouvé, pas de téléchargement : {recent}")
+    else:
+        donnees = telecharger(GROUPE)
+        chemin = sauvegarder(donnees, GROUPE)
+        print(f"{len(donnees)} objets enregistrés dans {chemin}")
+
