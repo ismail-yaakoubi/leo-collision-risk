@@ -2,14 +2,23 @@
 
 import json
 import time
-import requests
 from datetime import datetime, timezone
 from pathlib import Path
+
+import requests
 
 
 URL = "https://celestrak.org/NORAD/elements/gp.php"
 DOSSIER_RAW = Path("data/raw")
-GROUPE = "active"
+# Groupes téléchargés : les satellites en service, puis les débris suivis des quatre grands
+# événements de fragmentation (tirs antisatellites et collision).
+GROUPES = [
+    "active",              # satellites en service
+    "fengyun-1c-debris",   # tir antisatellite chinois, 2007
+    "cosmos-2251-debris",  # collision avec Iridium 33, 2009
+    "iridium-33-debris",   # même collision, 2009
+    "cosmos-1408-debris",  # tir antisatellite russe, 2021
+]
 
 
 def telecharger(groupe):
@@ -18,7 +27,10 @@ def telecharger(groupe):
     if reponse.status_code != 200:
         print("Message de CelesTrak :", reponse.text)
     reponse.raise_for_status()
-    return reponse.json()
+    donnees = reponse.json()          # ValueError si le site renvoie autre chose que du JSON
+    if not isinstance(donnees, list) or not donnees:
+        raise ValueError(f"réponse vide ou inattendue pour le groupe '{groupe}'")
+    return donnees
 
 
 def fichier_recent(groupe, heures=2):
@@ -42,12 +54,27 @@ def sauvegarder(donnees, groupe):
     return chemin
 
 
-if __name__ == "__main__":
-    recent = fichier_recent(GROUPE)
+def collecter(groupe):
+    """Télécharge un groupe, sauf si un fichier de moins de 2 h existe déjà."""
+    recent = fichier_recent(groupe)
     if recent is not None:
-        print(f"Fichier de moins de 2 h trouvé, pas de téléchargement : {recent}")
-    else:
-        donnees = telecharger(GROUPE)
-        chemin = sauvegarder(donnees, GROUPE)
-        print(f"{len(donnees)} objets enregistrés dans {chemin}")
+        print(f"[cache]  {groupe} : fichier de moins de 2 h trouvé ({recent.name})")
+        return
+    donnees = telecharger(groupe)
+    chemin = sauvegarder(donnees, groupe)
+    print(f"[ok]     {groupe} : {len(donnees)} objets enregistrés dans {chemin}")
 
+
+if __name__ == "__main__":
+    echecs = []
+    for groupe in GROUPES:
+        try:
+            collecter(groupe)
+        except (requests.RequestException, ValueError) as erreur:
+            # Un groupe en échec ne doit pas empêcher de récupérer les autres
+            echecs.append(groupe)
+            print(f"[échec]  {groupe} : {erreur}")
+        time.sleep(1)  # une seconde entre deux requêtes, par politesse envers le serveur
+
+    if echecs:
+        print(f"Groupes non récupérés : {', '.join(echecs)}")
