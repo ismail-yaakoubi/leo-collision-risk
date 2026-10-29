@@ -67,3 +67,49 @@ il faut les placer tous au même instant.
 
 
   
+## D3 – Mesure de l'encombrement par altitude (28/10/2026)
+
+**Contexte :** un objet sur une orbite elliptique traverse plusieurs tranches
+d'altitude. Le compter dans une seule tranche (par exemple à son altitude moyenne)
+fausserait la répartition.
+
+**Options envisagées :**
+- Option 1 : une tranche par objet, selon son altitude moyenne.
+- Option 2 : répartir chaque objet entre les tranches au prorata du temps qu'il y passe.
+
+**Décision :** option 2. Chaque orbite est échantillonnée en 60 instants régulièrement
+espacés dans le temps ; chaque échantillon vaut 1/60 d'objet. Tranches de 50 km.
+
+**Justification :** le risque de collision dépend du temps passé dans une zone, pas de
+l'altitude moyenne.
+
+**Conséquences :**
+- l'encombrement s'exprime en « objets équivalents » par tranche : un objet sur une orbite
+  circulaire compte pour 1 dans une seule tranche, un objet sur une orbite elliptique est
+  réparti entre plusieurs tranches ;
+- la part des débris n'est calculée que pour les tranches d'au moins 50 objets équivalents,
+  pour éviter des pourcentages extrêmes sans signification sur quelques objets.
+
+## D4 – Prise en compte des débris (28/10/2026)
+
+**Contexte :** le groupe `active` ne contient que les satellites en service. Les débris,
+qui ne peuvent pas manœuvrer, sont pourtant une source majeure de risque.
+
+**Options envisagées :**
+- Option 1 : les groupes de débris publiés par CelesTrak, un par grand événement de
+  fragmentation (Fengyun-1C, Cosmos 2251, Iridium 33, Cosmos 1408). Sans compte, même format.
+- Option 2 : le catalogue complet de Space-Track.org (satellites morts, étages de fusée et
+  tous les débris suivis). Plus complet, mais demande un compte et un autre format.
+
+**Décision :** option 1 pour l'instant ; option 2 envisagée pour compléter.
+
+**Justification :** l'option 1 s'intègre sans changer le code de calcul et couvre les plus
+grands nuages de débris de l'orbite basse.
+
+**Conséquences :**
+- notre jeu de données (environ 19 500 objets) ne représente qu'environ 41 % des quelque
+  47 220 objets suivis (ESA, octobre 2026) : l'encombrement et le risque calculés sont des minorants ;
+- un objet présent dans deux groupes n'est compté qu'une fois (les satellites actifs sont
+  traités en premier) ;
+- les débris de moins de 10 cm, non suivis, seront estimés séparément à partir des chiffres
+  publiés par l'ESA.
