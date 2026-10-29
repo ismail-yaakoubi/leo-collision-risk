@@ -113,3 +113,43 @@ grands nuages de débris de l'orbite basse.
   traités en premier) ;
 - les débris de moins de 10 cm, non suivis, seront estimés séparément à partir des chiffres
   publiés par l'ESA.
+
+## D5 – Modèle de risque et Monte-Carlo (29/10/2026)
+
+**Contexte :** passer de la densité d'objets par tranche à une probabilité de collision,
+alors que plusieurs paramètres sont mal connus (vitesses relatives, tailles, manœuvres,
+petits débris non suivis).
+
+**Options envisagées :**
+- Option 1 : un calcul unique avec des valeurs centrales. Simple, mais ne dit rien de la
+  fiabilité du résultat.
+- Option 2 : le même modèle, avec un Monte-Carlo sur les paramètres incertains.
+- Option 3 : les modèles de référence des agences (MASTER pour l'ESA, ORDEM pour la NASA).
+  Plus complets, mais accès sur inscription ou demande, et difficiles à brancher sur notre chaîne.
+
+**Décision :** option 2. Modèle de la théorie cinétique des gaz (Kessler et Cour-Palais, 1978) :
+taux = densité × vitesse relative × section de collision, probabilité annuelle
+1 − exp(−taux × 1 an) (loi de Poisson). Monte-Carlo de 10 000 tirages, graine fixe (42) ;
+résultat : médiane et intervalle à 90 % (5e et 95e percentiles).
+
+**Hypothèses (lois uniformes, car seules des bornes plausibles sont connues) :**
+- vitesse relative 7 à 13 km/s (environ 10 km/s en moyenne en orbite basse) ;
+- rayon des satellites actifs 1 à 3 m, des débris suivis 5 à 50 cm ;
+- 90 à 99 % des collisions avec un satellite actif évitées par manœuvre ; aucune pour les débris ;
+- 15 à 30 débris de 1 à 10 cm par objet suivi (ESA : environ 1,5 million contre 68 450,
+  soit environ 22), de rayon 3 cm, répartis en altitude comme les débris suivis ;
+- satellite étudié : 1 m de rayon (choix fixe, pas une incertitude).
+
+**Justification :** le Monte-Carlo donne une plage de résultats honnête plutôt qu'un chiffre
+d'une précision illusoire ; le modèle est le modèle de base des études de débris.
+
+**Conséquences :**
+- deux risques sont donnés séparément : collision avec un objet suivi, impact d'un petit débris ;
+- résultats stables à moins de 1 % en changeant la graine (vérifié avec 42, 1 et 2026) ;
+- le paramètre le plus influent est l'efficacité des manœuvres (un facteur 10 sur le risque
+  à 450–500 km) ;
+- les objets suivis absents de nos données (environ 59 % du catalogue) ne sont pas inclus :
+  le risque calculé est un minorant ;
+- l'estimation des petits débris est la partie la moins solide : à valider contre les flux
+  publiés par MASTER (amélioration envisagée), de même que des lois triangulaires pour la
+  vitesse relative et le rapport petits/grands débris.

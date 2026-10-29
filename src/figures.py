@@ -1,12 +1,14 @@
 """Figures du projet, à partir des résultats de src/altitudes.py et src/comparaison.py.
 
-Quatre figures, enregistrées dans figures/ :
+Cinq figures, enregistrées dans figures/ :
 - encombrement par altitude (satellites actifs et débris suivis) ;
 - débris suivis par altitude ;
 - part des débris par altitude ;
-- validation : écart entre SGP4 et Kepler (groupe active).
+- validation : écart entre SGP4 et Kepler (groupe active) ;
+- risque de collision par altitude (Monte-Carlo).
 
-Utilisation, depuis la racine du projet (après src/altitudes.py et src/comparaison.py) :
+Utilisation, depuis la racine du projet (après src/altitudes.py, src/comparaison.py et
+src/monte_carlo.py) :
     python src/figures.py
 """
 
@@ -18,6 +20,8 @@ matplotlib.use("Agg")              # pas de fenêtre : on enregistre directement
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+
+from monte_carlo import N_TIRAGES, RAYON_CIBLE_M, ZONE_KM   # mêmes réglages que le calcul
 
 DOSSIER_PROCESSED = Path("data/processed")
 DOSSIER_FIGURES = Path("figures")
@@ -170,6 +174,39 @@ def figure_validation(resume, suffixe):
     return enregistrer(fig, "validation_kepler.png")
 
 
+def figure_risque(resultats):
+    """Risque annuel par tranche : médiane (point) et intervalle à 90 % (trait), deux séries."""
+    zone = resultats[(resultats["TRANCHE_KM"] >= ZONE_KM[0]) & (resultats["TRANCHE_KM"] < ZONE_KM[1])]
+    centre = zone["TRANCHE_KM"] + LARGEUR_TRANCHE_KM / 2
+    series = [
+        ("SUIVIS", "Collision avec un objet suivi", BLEU, -6),     # décalage de ±6 km :
+        ("PETITS", "Impact d'un débris de 1 à 10 cm", ORANGE, 6),  # les points ne se cachent pas
+    ]
+    fig, ax = plt.subplots(figsize=(9, 5))
+    fig.subplots_adjust(top=0.82, left=0.1, right=0.98, bottom=0.14)
+    for cle, libelle, couleur, decalage in series:
+        mediane = zone[f"{cle}_MEDIANE"]
+        ax.errorbar(centre + decalage, mediane,
+                    yerr=[mediane - zone[f"{cle}_P05"], zone[f"{cle}_P95"] - mediane],
+                    fmt="o", markersize=4, color=couleur, ecolor=couleur, elinewidth=1.2, capsize=0,
+                    label=libelle)
+    ax.set_yscale("log")           # les risques vont de 1e-6 à 1e-4 : échelle logarithmique
+    style_axes(ax)
+    ax.set_xlabel("Altitude (km), centre des tranches de 50 km", color=TEXTE_SECONDAIRE, fontsize=9.5)
+    ax.set_ylabel("Probabilité par an (échelle logarithmique)", color=TEXTE_SECONDAIRE, fontsize=9.5)
+    ax.legend(frameon=False, fontsize=9, loc="upper right")
+
+    pic_suivis = zone.loc[zone["SUIVIS_MEDIANE"].idxmax(), "TRANCHE_KM"]
+    pic_petits = zone.loc[zone["PETITS_MEDIANE"].idxmax(), "TRANCHE_KM"]
+    titre(fig,
+          f"Deux pics de risque : objets suivis à {pic_suivis:.0f}–{pic_suivis + LARGEUR_TRANCHE_KM:.0f} km, "
+          f"petits débris à {pic_petits:.0f}–{pic_petits + LARGEUR_TRANCHE_KM:.0f} km",
+          f"Satellite de {RAYON_CIBLE_M:.0f} m de rayon · point = médiane, trait = intervalle à 90 % · "
+          f"{N_TIRAGES} tirages Monte-Carlo",
+          "objets suivis : CelesTrak · petits débris : estimation calibrée sur l'ESA (MASTER)")
+    return enregistrer(fig, "risque_par_altitude.png")
+
+
 def main():
     DOSSIER_FIGURES.mkdir(parents=True, exist_ok=True)
     tableau = charger_comparaison()
@@ -177,6 +214,12 @@ def main():
     for chemin in (figure_encombrement(tableau), figure_debris(tableau),
                    figure_part_debris(tableau), figure_validation(resume, suffixe)):
         print("Figure enregistrée :", chemin)
+
+    chemin_risque = DOSSIER_PROCESSED / "risque_monte_carlo.csv"
+    if chemin_risque.exists():
+        print("Figure enregistrée :", figure_risque(pd.read_csv(chemin_risque)))
+    else:
+        print("Pas de figure du risque : lancer d'abord src/monte_carlo.py.")
 
 
 if __name__ == "__main__":
